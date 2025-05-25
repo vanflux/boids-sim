@@ -2,7 +2,6 @@ package boids
 
 import (
 	"log"
-	"math"
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -22,7 +21,7 @@ func NewGame() *Game {
 		boids: []Boid{},
 	}
 	for i := 0; i < 20; i++ {
-		g.boids = append(g.boids, NewBoid(g, rand.Float64()*500, rand.Float64()*500, rand.Float64()*math.Pi*2))
+		g.boids = append(g.boids, NewBoid(g, rand.Float64()*screenWidth, rand.Float64()*screenHeight, rand.Float64()-0.5, rand.Float64()-0.5))
 	}
 	// g.boids = append(g.boids, NewBoid(g, 150, 150, rand.Float64()*math.Pi*2))
 	// g.boids = append(g.boids, NewBoid(g, 180, 180, rand.Float64()*math.Pi*2))

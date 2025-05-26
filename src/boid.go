@@ -22,16 +22,24 @@ func init() {
 
 func initBoidAsset() {
 	vertices := []ebiten.Vertex{}
-	vertices = append(vertices, ebiten.Vertex{DstX: 0, DstY: 0, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 0, ColorB: 0, ColorA: 1})
-	vertices = append(vertices, ebiten.Vertex{DstX: 32, DstY: 16, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 0, ColorB: 0, ColorA: 1})
-	vertices = append(vertices, ebiten.Vertex{DstX: 0, DstY: 32, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 0, ColorB: 0, ColorA: 1})
-	vertices = append(vertices, ebiten.Vertex{DstX: 0, DstY: 0, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 0, ColorB: 0, ColorA: 1})
+	vertices = append(vertices, ebiten.Vertex{DstX: 0, DstY: 0, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1})
+	vertices = append(vertices, ebiten.Vertex{DstX: 32, DstY: 16, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1})
+	vertices = append(vertices, ebiten.Vertex{DstX: 0, DstY: 32, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1})
+	vertices = append(vertices, ebiten.Vertex{DstX: 0, DstY: 0, SrcX: 1, SrcY: 1, ColorR: 1, ColorG: 1, ColorB: 1, ColorA: 1})
 	indices := []uint16{0, 1, 2, 0, 2, 3}
 	boidImg.DrawTriangles(vertices, indices, whiteSubImage, &ebiten.DrawTrianglesOptions{AntiAlias: true, FillRule: ebiten.FillRuleEvenOdd})
 }
 
+type BoidKind int8
+
+const (
+	Normal BoidKind = iota
+	Enemy
+)
+
 type Boid struct {
 	game            *Game
+	kind            BoidKind
 	x               float64
 	y               float64
 	vx              float64
@@ -41,7 +49,7 @@ type Boid struct {
 }
 
 func NewBoid(game *Game, x float64, y float64, vx float64, vy float64) Boid {
-	boid := Boid{game: game, x: x, y: y, vx: vx, vy: vy, separationRange: 30, viewRange: 70}
+	boid := Boid{game: game, kind: Normal, x: x, y: y, vx: vx, vy: vy, separationRange: 30, viewRange: 70}
 	return boid
 }
 
@@ -121,16 +129,27 @@ func (b *Boid) Update() {
 }
 
 func (b *Boid) Draw(screen *ebiten.Image) {
+	colorR := uint8(255)
+	colorG := uint8(255)
+	colorB := uint8(255)
+	if b.kind == Enemy {
+		colorG = 0
+		colorB = 0
+	}
+
 	// Draw boid itself
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Translate(-float64(boidImg.Bounds().Dx())/2, -float64(boidImg.Bounds().Dy())/2)
 	op.GeoM.Rotate(math.Atan2(b.vy, b.vx))
 	op.GeoM.Scale(0.5, 0.5)
 	op.GeoM.Translate(b.x, b.y)
+	op.ColorScale.SetR(float32(colorR) / 255)
+	op.ColorScale.SetG(float32(colorG) / 255)
+	op.ColorScale.SetB(float32(colorB) / 255)
 	screen.DrawImage(boidImg, &op)
 
 	// Draw angle line
-	vector.StrokeLine(screen, float32(b.x), float32(b.y), float32(b.x+b.vx*20), float32(b.y+b.vy*20), 1, color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)
+	vector.StrokeLine(screen, float32(b.x), float32(b.y), float32(b.x+b.vx*20), float32(b.y+b.vy*20), 1, color.RGBA{R: colorR, G: colorG, B: colorB, A: 255}, false)
 
 	// Draw view range
 	// vector.StrokeCircle(screen, float32(b.x), float32(b.y), float32(b.viewRange), 1, color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)

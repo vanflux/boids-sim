@@ -194,8 +194,8 @@ func (b *Boid) applyWallsCollision() {
 			minDist := min(lDist, rDist, tDist, bDist)
 			if time.Now().UnixMilli()-lastPlay > 50 {
 				lastPlay = time.Now().UnixMilli()
-				audioPlayer.Rewind()
-				audioPlayer.Play()
+				// audioPlayer.Rewind()
+				// audioPlayer.Play()
 			}
 			if lDist == minDist {
 				b.x += w.x - b.x

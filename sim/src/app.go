@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	screenWidth  = 500
-	screenHeight = 500
-	normalBoids  = 50
+	screenWidth  = 1200
+	screenHeight = 700
+	normalBoids  = 100
 	enemyBoids   = 3
 	walls        = 3
 	sampleRate   = 44100

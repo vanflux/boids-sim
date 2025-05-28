@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Boids Simulation by Vanflux</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #0e0e0e;
+      color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 1rem 2rem;
+      background-color: #111;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      margin: 0;
+    }
+
+    header a {
+      color: #0085fd;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      max-width: 1000px;
+      padding: 0rem 0.5rem;
+    }
+
+    .description {
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    .showcase {
+      display: flex;
+      justify-content: center;
+    }
+
+    iframe {
+      max-width: 800px;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1200/700;
+      display: block;
+      border: 2px solid #333;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .rules {
+      max-width: 800px;
+      text-align: left;
+      line-height: 1.5;
+    }
+
+    .buttons {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .buttons a {
+      background-color: #0085fd;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .buttons a:hover {
+      background-color: #006dcc;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background-color: #111;
+      font-size: 0.9rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Boids Simulation</h1>
+    <a href="https://github.com/vanflux" target="_blank">@vanflux</a>
+  </header>
+  <main>
+    <div class="content">
+      <div class="description">
+        <h2>A fun simulation where little triangles move together like birds or fish.</h2>
+        <p>This simulation shows how simple rules can make entities move in groups, just like flocks of birds.</p>
+      </div>
+      <div class="showcase">
+        <iframe src="/game/index.html"></iframe>
+      </div>
+      <div class="rules">
+        <h3>How it works</h3>
+        <ul>
+          <li><strong>Cohesion</strong> - Boids try to stay close to their neighbors.</li>
+          <li><strong>Alignment</strong> - They align with the direction nearby boids are flying.</li>
+          <li><strong>Separation</strong> - Boids avoid bumping into each other.</li>
+          <li><strong>Enemy boids</strong> - Red enemy boids make others run away from them.</li>
+          <li><strong>Mouse interaction</strong> - Click anywhere to make boids avoid your cursor.</li>
+          <li><strong>Wall avoidance</strong> - Boids automatically steer away from the walls.</li>
+        </ul>
+      </div>
+      <div class="buttons">
+        <a href="https://github.com/vanflux/boids-sim" target="_blank">View Repository</a>
+        <a href="https://github.com/vanflux" target="_blank">More Projects</a>
+      </div>
+    </div>
+  </main>
+  <footer>
+    &copy; <script>document.write(new Date().getFullYear())</script> Vanflux - Made with ❤️
+  </footer>
+</body>
+</html>

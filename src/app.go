@@ -8,30 +8,58 @@ import (
 )
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  = 500
+	screenHeight = 500
+	normalBoids  = 50
+	enemyBoids   = 3
+	walls        = 3
+	sampleRate   = 44100
 )
 
 type Game struct {
 	boids []Boid
+	walls []Wall
 }
 
-func NewGame() *Game {
+func NewGame() (*Game, error) {
 	g := &Game{
 		boids: []Boid{},
 	}
-	for i := 0; i < 20; i++ {
-		g.boids = append(g.boids, NewBoid(g, rand.Float64()*screenWidth, rand.Float64()*screenHeight, rand.Float64()-0.5, rand.Float64()-0.5))
+	for i := 0; i < normalBoids; i++ {
+		boid, _ := NewBoid(g, Normal, rand.Float64()*screenWidth, rand.Float64()*screenHeight, rand.Float64()-0.5, rand.Float64()-0.5)
+		g.boids = append(g.boids, *boid)
 	}
-	// g.boids = append(g.boids, NewBoid(g, 150, 150, rand.Float64()*math.Pi*2))
-	// g.boids = append(g.boids, NewBoid(g, 180, 180, rand.Float64()*math.Pi*2))
-	return g
+	for i := 0; i < enemyBoids; i++ {
+		boid, _ := NewBoid(g, Enemy, rand.Float64()*screenWidth, rand.Float64()*screenHeight, rand.Float64()-0.5, rand.Float64()-0.5)
+		g.boids = append(g.boids, *boid)
+	}
+	// for i := 0; i < walls; i++ {
+	// 	g.walls = append(g.walls, NewWall(g, rand.Float64()*(screenWidth-80)+40, rand.Float64()*(screenHeight-80)+40, rand.Float64()*20+20, rand.Float64()*20+20))
+	// }
+	g.walls = append(g.walls, NewWall(g, 40, 40, 100, 20))
+	g.walls = append(g.walls, NewWall(g, 300, 50, 80, 80))
+	g.walls = append(g.walls, NewWall(g, 200, 300, 20, 150))
+	return g, nil
+}
+
+func (g *Game) detectWall(x float64, y float64) bool {
+	for i := range g.walls {
+		w := &g.walls[i]
+		if x > w.x && y > w.y && x < w.x+w.width && y < w.y+w.height {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *Game) Update() error {
 	for i := range g.boids {
 		boid := &g.boids[i]
 		boid.Update()
+	}
+	for i := range g.walls {
+		wall := &g.walls[i]
+		wall.Update()
 	}
 	return nil
 }
@@ -42,16 +70,27 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		boid := &g.boids[i]
 		boid.Draw(screen)
 	}
+	for i := range g.walls {
+		wall := &g.walls[i]
+		wall.Draw(screen)
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
 }
 
-func Start() {
+func Start() error {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Boids sim")
-	if err := ebiten.RunGame(NewGame()); err != nil {
+	game, err := NewGame()
+	if err != nil {
 		log.Fatal(err)
+		return err
 	}
+	if err := ebiten.RunGame(game); err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return nil
 }

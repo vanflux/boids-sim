@@ -1,23 +1,39 @@
 package boids
 
 import (
+	"bytes"
 	"image"
 	"image/color"
 	"math"
+	"os"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 )
 
 var (
 	whiteImage    = ebiten.NewImage(3, 3)
 	whiteSubImage = whiteImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 	boidImg       = ebiten.NewImage(32, 32)
+	audioContext  *audio.Context
+	audioPlayer   *audio.Player
+	lastPlay      = int64(0)
 )
 
 func init() {
 	whiteImage.Fill(color.White)
 	initBoidAsset()
+	audioContext = audio.NewContext(44100)
+	dat, err := os.ReadFile("/home/lucas/projects/boids-sim/src/hit.wav")
+	if err == nil {
+		s, err := wav.DecodeF32(bytes.NewReader(dat))
+		if err == nil {
+			audioPlayer, _ = audioContext.NewPlayerF32(s)
+			audioPlayer.SetVolume(0.1)
+		}
+	}
 }
 
 func initBoidAsset() {
@@ -48,18 +64,30 @@ type Boid struct {
 	viewRange       float64
 }
 
-func NewBoid(game *Game, x float64, y float64, vx float64, vy float64) Boid {
-	boid := Boid{game: game, kind: Normal, x: x, y: y, vx: vx, vy: vy, separationRange: 30, viewRange: 70}
-	return boid
+func NewBoid(game *Game, kind BoidKind, x float64, y float64, vx float64, vy float64) (*Boid, error) {
+	boid := &Boid{game: game, kind: kind, x: x, y: y, vx: vx, vy: vy, separationRange: 30, viewRange: 70}
+	return boid, nil
 }
 
-func (b *Boid) Update() {
-	separationFactor := 0.005
-	alignmentFactor := 0.05
-	cohesionFactor := 0.0005
-	turnFactor := 0.2
-	minSpeed := 1.0
-	maxSpeed := 1.5
+func (b *Boid) raycastWall(angleDiff float64, distance float64) bool {
+	forwardAngle := math.Atan2(b.vy, b.vx)
+	angle := forwardAngle + angleDiff
+	cos := math.Cos(angle)
+	sin := math.Sin(angle)
+	for i := float64(0); i <= distance; i += 5 {
+		x := b.x + cos*distance
+		y := b.y + sin*distance
+		if b.game.detectWall(x, y) {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *Boid) applyRules() {
+	separationFactor := 0.03
+	alignmentFactor := 0.02
+	cohesionFactor := 0.001
 
 	separationDx := 0.0
 	separationDy := 0.0
@@ -79,41 +107,116 @@ func (b *Boid) Update() {
 		}
 		neighbors++
 		if distance < b.separationRange {
-			separationDx += b.x - b2.x
-			separationDy += b.y - b2.y
+			separationAngle := math.Atan2(b.y-b2.y, b.x-b2.x)
+			separationDx += math.Cos(separationAngle) * (b.separationRange - distance)
+			separationDy += math.Sin(separationAngle) * (b.separationRange - distance)
+		}
+		if distance < b.viewRange && b2.kind == Enemy {
+			separationAngle := math.Atan2(b.y-b2.y, b.x-b2.x)
+			separationDx += math.Cos(separationAngle) * (b.viewRange - distance)
+			separationDy += math.Sin(separationAngle) * (b.viewRange - distance)
 		}
 		vxAvg += b2.vx
 		vyAvg += b2.vy
 		xAvg += b2.x
 		yAvg += b2.y
 	}
+	avoidWallDistance := 70.0
+	avoidWallFactor := 25.0
+	avoidWallMinAngle := math.Pi * 2 * 0.05
+	avoidWallMaxAngle := math.Pi * 2 * 0.30
+	avoidWallAngleStep := math.Pi * 2 * 0.05
+loop:
+	for distance := 1.0; distance <= avoidWallDistance; distance++ {
+		for angleDiff := avoidWallMinAngle; angleDiff <= avoidWallMaxAngle; angleDiff += avoidWallAngleStep {
+			if b.raycastWall(angleDiff, distance) {
+				separationAngle := math.Atan2(b.vy, b.vx) - (math.Pi / 2)
+				separationDx += math.Cos(separationAngle) * (avoidWallDistance - distance) / avoidWallDistance * avoidWallFactor
+				separationDy += math.Sin(separationAngle) * (avoidWallDistance - distance) / avoidWallDistance * avoidWallFactor
+				break loop
+			} else if b.raycastWall(-angleDiff, distance) {
+				separationAngle := math.Atan2(b.vy, b.vx) + (math.Pi / 2)
+				separationDx += math.Cos(separationAngle) * (avoidWallDistance - distance) / avoidWallDistance * avoidWallFactor
+				separationDy += math.Sin(separationAngle) * (avoidWallDistance - distance) / avoidWallDistance * avoidWallFactor
+				break loop
+			}
+		}
+	}
+	if ebiten.IsMouseButtonPressed(0) {
+		cursorX, cursorY := ebiten.CursorPosition()
+		distance := math.Sqrt(((float64(cursorX) - b.x) * (float64(cursorX) - b.x)) + ((float64(cursorY) - b.y) * (float64(cursorY) - b.y))) // Pythagoras △
+		if distance < b.viewRange {
+			separationAngle := math.Atan2(b.y-float64(cursorY), b.x-float64(cursorX))
+			separationDx += math.Cos(separationAngle) * (b.viewRange - distance)
+			separationDy += math.Sin(separationAngle) * (b.viewRange - distance)
+		}
+	}
+	b.vx += separationDx * separationFactor
+	b.vy += separationDy * separationFactor
 	if neighbors > 0 {
 		vxAvg /= float64(neighbors)
 		vyAvg /= float64(neighbors)
 		xAvg /= float64(neighbors)
 		yAvg /= float64(neighbors)
-
-		b.vx += separationDx * separationFactor
-		b.vy += separationDy * separationFactor
 		b.vx += vxAvg * alignmentFactor
 		b.vy += vyAvg * alignmentFactor
 		b.vx += (xAvg - b.x) * cohesionFactor
 		b.vy += (yAvg - b.y) * cohesionFactor
 	}
+}
 
-	if b.x < 0 {
-		b.vx += turnFactor
+func (b *Boid) applyInfiniteScreen() {
+	tolerance := 10.0
+	if b.x < -tolerance {
+		b.x = screenWidth
 	}
-	if b.y < 0 {
-		b.vy += turnFactor
+	if b.y < -tolerance {
+		b.y = screenHeight
 	}
-	if b.x > screenWidth {
-		b.vx -= turnFactor
+	if b.x > screenWidth+tolerance {
+		b.x = 0
 	}
-	if b.y > screenHeight {
-		b.vy -= turnFactor
+	if b.y > screenHeight+tolerance {
+		b.y = 0
 	}
+}
 
+func (b *Boid) applyWallsCollision() {
+	for i := range b.game.walls {
+		w := &b.game.walls[i]
+
+		if b.x > w.x && b.y > w.y && b.x < w.x+w.width && b.y < w.y+w.height {
+			lDist := b.x - w.x
+			rDist := w.x + w.width - b.x
+			tDist := b.y - w.y
+			bDist := w.y + w.height - b.y
+
+			minDist := min(lDist, rDist, tDist, bDist)
+			if time.Now().UnixMilli()-lastPlay > 50 {
+				lastPlay = time.Now().UnixMilli()
+				audioPlayer.Rewind()
+				audioPlayer.Play()
+			}
+			if lDist == minDist {
+				b.x += w.x - b.x
+				b.vx = -b.vx
+			} else if rDist == minDist {
+				b.x += w.x + w.width - b.x
+				b.vx = -b.vx
+			} else if tDist == minDist {
+				b.y += w.y - b.y
+				b.vy = -b.vy
+			} else if bDist == minDist {
+				b.y += w.y + w.height - b.y
+				b.vy = -b.vy
+			}
+		}
+	}
+}
+
+func (b *Boid) applySpeedLimit() {
+	minSpeed := 1.0
+	maxSpeed := 1.5
 	speed := math.Sqrt((b.vx * b.vx) + (b.vy * b.vy)) // Pythagoras △
 	if speed < minSpeed {
 		b.vx = b.vx / speed * minSpeed
@@ -123,9 +226,15 @@ func (b *Boid) Update() {
 		b.vx = b.vx / speed * maxSpeed
 		b.vy = b.vy / speed * maxSpeed
 	}
+}
 
+func (b *Boid) Update() {
+	b.applyRules()
+	b.applyWallsCollision()
+	b.applySpeedLimit()
 	b.x += b.vx
 	b.y += b.vy
+	b.applyInfiniteScreen()
 }
 
 func (b *Boid) Draw(screen *ebiten.Image) {
@@ -149,7 +258,7 @@ func (b *Boid) Draw(screen *ebiten.Image) {
 	screen.DrawImage(boidImg, &op)
 
 	// Draw angle line
-	vector.StrokeLine(screen, float32(b.x), float32(b.y), float32(b.x+b.vx*20), float32(b.y+b.vy*20), 1, color.RGBA{R: colorR, G: colorG, B: colorB, A: 255}, false)
+	// vector.StrokeLine(screen, float32(b.x), float32(b.y), float32(b.x+b.vx*20), float32(b.y+b.vy*20), 1, color.RGBA{R: colorR, G: colorG, B: colorB, A: 255}, false)
 
 	// Draw view range
 	// vector.StrokeCircle(screen, float32(b.x), float32(b.y), float32(b.viewRange), 1, color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)

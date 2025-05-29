@@ -10,7 +10,7 @@ module.exports = {
         new CopyPlugin({
             patterns: [
                 { from: "../sim/out/boids.wasm", to: "game/boids.wasm" },
-                { from: "./public", to: "public", globOptions: { ignore: 'index.html' } },
+                { from: "./public", to: ".", globOptions: { ignore: '**/public/index.html' } },
             ],
         }),
     ]

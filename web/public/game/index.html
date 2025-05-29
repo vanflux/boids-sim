@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<script src="game/index.js"></script>
+<script src="index.js"></script>
 <script>
 const go = new Go();
-WebAssembly.instantiateStreaming(fetch("game/boids.wasm"), go.importObject).then(result => {
+WebAssembly.instantiateStreaming(fetch("boids.wasm"), go.importObject).then(result => {
     go.run(result.instance);
 });
 </script>

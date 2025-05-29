@@ -124,7 +124,9 @@
         <p>This simulation shows how simple rules can make entities move in groups, just like flocks of birds.</p>
       </div>
       <div class="showcase">
-        <iframe src="game/index.html"></iframe>
+        <script>
+          document.write(`<iframe src="${location.pathname}${location.pathname.endsWith('/') ? '' : '/'}game/index.html"></iframe>`);
+        </script>
       </div>
       <div class="rules">
         <h3>How it works</h3>

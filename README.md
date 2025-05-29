@@ -2,6 +2,8 @@
 
 A fun and interactive simulation where little triangles (boids) mimic the natural flocking behavior of birds or fish.
 
+🔗 **Live Demo:** [vanflux.github.io/boids-sim](https://vanflux.github.io/boids-sim/)
+
 ---
 
 ## ✨ Features
@@ -18,6 +20,10 @@ A fun and interactive simulation where little triangles (boids) mimic the natura
 ## 🖼️ Preview
 
 ![Boids Simulation Demo](./docs/demo.png)
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
 
 ---
 
